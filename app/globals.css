@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Brand accents — constant across light & dark mode */
+  --brand-blue: #2f80f9;
+  --brand-green: #08bd7e;
+
+  /* Light mode surfaces */
+  --bg-base: #ffffff;
+  --bg-panel: #f9fafb;
+  --text-primary: #0f1729;
+  --text-muted: #65758b;
+  --border-color: #e5e9f0;
+}
+
+[data-theme="dark"] {
+  /* Dark mode surfaces — accents stay identical to light mode */
+  --bg-base: #0b1120;
+  --bg-panel: #131b2e;
+  --text-primary: #f5f7fa;
+  --text-muted: #8b95a8;
+  --border-color: #24304a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-plus-jakarta), -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+p {
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--brand-blue);
+  border-radius: 3px;
+}
+
+/* Dropdown open/close animation for components/ui/select.tsx */
+@keyframes uy-select-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.uy-select-content {
+  animation: uy-select-in 0.12s ease-out;
+}
+
+/* Borderless inputs used directly inside the live invoice preview, so
+   editing feels like writing on the invoice itself rather than a form. */
+.uy-inline-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed transparent;
+  outline: none;
+  width: 100%;
+}
+.uy-inline-input:hover,
+.uy-inline-input:focus {
+  border-bottom-color: var(--brand-blue);
+}
