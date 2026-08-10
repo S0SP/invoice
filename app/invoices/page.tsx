@@ -23,6 +23,20 @@ function getGoogleDriveDownloadLink(driveLink: string): string {
 export default function InvoiceHistoryPage() {
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [q, setQ] = useState("");
+  const [copiedSerial, setCopiedSerial] = useState<string | null>(null);
+
+  const copyToClipboard = (serial: string, url: string) => {
+    navigator.clipboard.writeText(url);
+    setCopiedSerial(serial);
+    setTimeout(() => {
+      setCopiedSerial(null);
+    }, 2000);
+  };
+
+  const shareWhatsApp = (inv: InvoiceRow) => {
+    const text = `Hi, please find the invoice ${inv.serialNumber} for ${inv.billToName} from UnboundYou here: ${inv.pdfDriveLink}`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+  };
 
   async function load(search = "") {
     const res = await fetch(`/api/invoices?q=${encodeURIComponent(search)}`);
@@ -77,6 +91,27 @@ export default function InvoiceHistoryPage() {
                     >
                       View
                     </a>
+                    <button
+                      onClick={() => copyToClipboard(inv.serialNumber, inv.pdfDriveLink)}
+                      className="text-xs text-muted hover:text-foreground transition hover:underline focus:outline-none"
+                    >
+                      {copiedSerial === inv.serialNumber ? "Copied!" : "Copy"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (navigator.share) {
+                          navigator.share({
+                            title: `Invoice ${inv.serialNumber}`,
+                            url: inv.pdfDriveLink,
+                          }).catch(() => {});
+                        } else {
+                          shareWhatsApp(inv);
+                        }
+                      }}
+                      className="text-xs text-muted hover:text-foreground transition hover:underline focus:outline-none"
+                    >
+                      Share
+                    </button>
                     <a
                       href={getGoogleDriveDownloadLink(inv.pdfDriveLink)}
                       className="text-xs text-primary hover:opacity-90 transition font-semibold hover:underline bg-primary/10 px-2.5 py-1 rounded-md"
