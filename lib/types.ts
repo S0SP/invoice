@@ -39,6 +39,7 @@ export interface Invoice {
   total: number;
   pdfDriveLink?: string;
   sacCode?: string;
+  paymentMode?: string;
 }
 
 export interface BrandConfig {
@@ -58,4 +59,5 @@ export interface BrandConfig {
   secondaryColor: string;
   paymentLink: string;
   sacCodes?: string;
+  paymentModes?: string;
 }

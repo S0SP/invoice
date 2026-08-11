@@ -20,10 +20,12 @@ interface Props {
     date?: string;
     note?: string;
     sacCode?: string;
+    paymentMode?: string;
   }) => void;
   onUpdateLine: (index: number, patch: Partial<InvoiceLineItem>) => void;
   onRemoveLine: (index: number) => void;
   sacCode: string;
+  paymentMode: string;
 }
 
 export function InvoicePreview({
@@ -39,6 +41,7 @@ export function InvoicePreview({
   onUpdateLine,
   onRemoveLine,
   sacCode,
+  paymentMode,
 }: Props) {
   const subtotal = lineItems.reduce((sum, it) => sum + it.qty * it.price, 0);
   const gstAmount = lineItems.reduce((sum, it) => sum + it.qty * it.price * (it.gstRate / 100), 0);
@@ -69,6 +72,25 @@ export function InvoicePreview({
   const sacCodesOptions = [...parsedSacCodes];
   if (sacCode && !sacCodesOptions.some((item) => item.code === sacCode)) {
     sacCodesOptions.push({ name: `Custom (${sacCode})`, code: sacCode });
+  }
+
+  const parsedPaymentModes: string[] = (() => {
+    if (brand.paymentModes) {
+      try {
+        const parsed = JSON.parse(brand.paymentModes);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch (e) {
+        console.error("Failed to parse paymentModes", e);
+      }
+    }
+    return ["Bank Transfer", "Razorpay"];
+  })();
+
+  const paymentModesOptions = [...parsedPaymentModes];
+  if (paymentMode && !paymentModesOptions.includes(paymentMode)) {
+    paymentModesOptions.push(paymentMode);
   }
 
   return (
@@ -189,9 +211,19 @@ export function InvoicePreview({
           />
         </div>
         <div className="text-xs text-slate-700 space-y-1">
-          <div className="flex">
+          <div className="flex items-center gap-1">
             <span className="font-bold text-slate-800 w-32">Mode of Payment:</span>
-            <span className="text-slate-900">Online</span>
+            <select
+              className="uy-inline-input text-[#0F1729] font-medium bg-transparent border-b border-dashed border-slate-300 focus:border-b-2 focus:border-primary py-0.5 focus:outline-none cursor-pointer"
+              value={paymentMode}
+              onChange={(e) => onChange({ paymentMode: e.target.value })}
+            >
+              {paymentModesOptions.map((mode) => (
+                <option key={mode} value={mode}>
+                  {mode}
+                </option>
+              ))}
+            </select>
           </div>
           <div className="flex">
             <span className="font-bold text-slate-800 w-32">Payment Status:</span>
@@ -305,7 +337,7 @@ export function InvoicePreview({
 
       {/* Footer Info: Payment Details, Stamp, QR */}
       <div className="flex justify-between items-end border-t border-slate-100 pt-4 mt-4">
-        <div className="space-y-1 text-[10px] text-slate-600 max-w-[65%]">
+        <div className="space-y-1 text-[10px] text-slate-600 max-w-[55%]">
           <p className="font-bold uppercase tracking-wider text-slate-400 mb-0.5">Payment Information</p>
           <p className="font-medium text-slate-800">UPI ID: {brand.upiId}</p>
           <p className="font-medium text-slate-800">Bank Name: {brand.bankName}</p>
@@ -325,33 +357,33 @@ export function InvoicePreview({
               </a>
             </p>
           )}
-          {brand.sealUrl && (
-            <div className="mt-2">
-              <Image
-                src={brand.sealUrl}
-                alt="Company Seal"
-                width={55}
-                height={55}
-                className="h-12 w-auto object-contain"
-                unoptimized
-              />
-            </div>
-          )}
         </div>
-        <div className="flex flex-col items-center">
-          {brand.qrUrl && (
+        <div className="flex items-start gap-4">
+          {brand.sealUrl && (
             <Image
-              src={brand.qrUrl}
-              alt="Payment QR"
-              width={75}
-              height={75}
-              className="h-16 w-auto object-contain"
+              src={brand.sealUrl}
+              alt="Company Seal"
+              width={80}
+              height={80}
+              className="h-20 w-20 object-contain"
               unoptimized
             />
           )}
-          <span className="text-[8px] text-slate-400 mt-1 uppercase font-semibold tracking-wider">
-            Scan to Pay
-          </span>
+          <div className="flex flex-col items-center">
+            {brand.qrUrl && (
+              <Image
+                src={brand.qrUrl}
+                alt="Payment QR"
+                width={80}
+                height={80}
+                className="h-20 w-20 object-contain"
+                unoptimized
+              />
+            )}
+            <span className="text-[8px] text-slate-400 mt-1 uppercase font-semibold tracking-wider">
+              Scan to Pay
+            </span>
+          </div>
         </div>
       </div>
     </div>

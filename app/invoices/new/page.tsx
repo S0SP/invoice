@@ -17,6 +17,7 @@ export default function NewInvoicePage() {
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [lineItems, setLineItems] = useState<InvoiceLineItem[]>([]);
   const [sacCode, setSacCode] = useState("");
+  const [paymentMode, setPaymentMode] = useState("");
   const [saving, setSaving] = useState(false);
   const [successSerial, setSuccessSerial] = useState("");
   const [lastSaved, setLastSaved] = useState<{
@@ -47,6 +48,19 @@ export default function NewInvoicePage() {
           }
         } else {
           setSacCode("999293");
+        }
+
+        if (d.config?.paymentModes) {
+          try {
+            const parsed = JSON.parse(d.config.paymentModes);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setPaymentMode(parsed[0]);
+            }
+          } catch (e) {
+            setPaymentMode("Bank Transfer");
+          }
+        } else {
+          setPaymentMode("Bank Transfer");
         }
       });
   }, []);
@@ -83,7 +97,7 @@ export default function NewInvoicePage() {
     const res = await fetch("/api/invoices", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ billToName, billToPhone, billToEmail, note, date, lineItems, sacCode }),
+      body: JSON.stringify({ billToName, billToPhone, billToEmail, note, date, lineItems, sacCode, paymentMode }),
     });
 
     if (!res.ok) {
@@ -249,10 +263,12 @@ export default function NewInvoicePage() {
                   if (patch.date !== undefined) setDate(patch.date);
                   if (patch.note !== undefined) setNote(patch.note);
                   if (patch.sacCode !== undefined) setSacCode(patch.sacCode);
+                  if (patch.paymentMode !== undefined) setPaymentMode(patch.paymentMode);
                 }}
                 onUpdateLine={updateLine}
                 onRemoveLine={removeLine}
                 sacCode={sacCode}
+                paymentMode={paymentMode}
               />
             ) : (
               <div className="rounded-card border border-border bg-panel p-10 text-center text-sm text-muted">

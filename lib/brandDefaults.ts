@@ -26,6 +26,7 @@ export const DEFAULT_BRAND: BrandConfig = {
     { name: "Sessions", code: "999293" },
     { name: "Ebooks", code: "9984" }
   ]),
+  paymentModes: JSON.stringify(["Bank Transfer", "Razorpay"]),
 };
 
 /** Merges a partial/empty config read from the Sheet over the defaults — Sheet values win when present. */

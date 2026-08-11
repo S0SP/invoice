@@ -25,6 +25,7 @@ const FIELDS: { key: keyof BrandConfig; label: string }[] = [
 export default function BrandSettingsPage() {
   const [config, setConfig] = useState<Partial<BrandConfig>>({});
   const [sacCodesList, setSacCodesList] = useState<{ name: string; code: string }[]>([]);
+  const [paymentModesList, setPaymentModesList] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -44,12 +45,26 @@ export default function BrandSettingsPage() {
             { name: "Ebooks", code: "9984" },
           ]);
         }
+        if (d.config?.paymentModes) {
+          try {
+            setPaymentModesList(JSON.parse(d.config.paymentModes));
+          } catch (e) {
+            setPaymentModesList([]);
+          }
+        } else {
+          setPaymentModesList(["Bank Transfer", "Razorpay"]);
+        }
       });
   }, []);
 
   function updateSacCodes(newList: { name: string; code: string }[]) {
     setSacCodesList(newList);
     setConfig((prev) => ({ ...prev, sacCodes: JSON.stringify(newList) }));
+  }
+
+  function updatePaymentModes(newList: string[]) {
+    setPaymentModesList(newList);
+    setConfig((prev) => ({ ...prev, paymentModes: JSON.stringify(newList) }));
   }
 
   async function handleSave() {
@@ -152,6 +167,61 @@ export default function BrandSettingsPage() {
             className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border bg-background py-2 text-xs font-semibold text-muted hover:text-foreground hover:border-muted transition"
           >
             + Add custom SAC code
+          </button>
+        </div>
+
+        <div className="mb-6 rounded-card border border-border bg-panel p-6 space-y-4">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Predefined Payment Modes</h2>
+            <p className="text-xs text-muted mt-1">
+              Add payment methods (e.g. Bank Transfer, Razorpay) to select from during invoice creation.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {paymentModesList.map((mode, idx) => (
+              <div key={idx} className="flex gap-4 items-end bg-background border border-border rounded-lg p-3 relative group">
+                <div className="flex-1">
+                  <label className="mb-1 block text-[10px] font-bold text-muted uppercase tracking-wider">
+                    Payment Mode Name
+                  </label>
+                  <input
+                    value={mode}
+                    onChange={(e) => {
+                      const newList = [...paymentModesList];
+                      newList[idx] = e.target.value;
+                      updatePaymentModes(newList);
+                    }}
+                    placeholder="Bank Transfer, Razorpay, Paytm..."
+                    className="w-full rounded-md border border-border bg-panel px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    const newList = paymentModesList.filter((_, i) => i !== idx);
+                    updatePaymentModes(newList);
+                  }}
+                  className="rounded-md bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 text-xs font-semibold transition"
+                  title="Remove Payment Mode"
+                >
+                  Delete
+                </button>
+              </div>
+            ))}
+
+            {paymentModesList.length === 0 && (
+              <p className="text-xs text-muted italic">No payment modes defined. Add one below to get started.</p>
+            )}
+          </div>
+
+          <button
+            onClick={() => {
+              const newList = [...paymentModesList, ""];
+              updatePaymentModes(newList);
+            }}
+            className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border bg-background py-2 text-xs font-semibold text-muted hover:text-foreground hover:border-muted transition"
+          >
+            + Add custom payment mode
           </button>
         </div>
 

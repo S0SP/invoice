@@ -24,10 +24,11 @@ const BRAND_FIELDS: (keyof BrandConfig)[] = [
   "secondaryColor",
   "paymentLink",
   "sacCodes",
+  "paymentModes",
 ];
 
 async function loadBrandConfig(): Promise<BrandConfig> {
-  const rows = await readTab(TABS.brandConfig, "A2:P2");
+  const rows = await readTab(TABS.brandConfig, "A2:Q2");
   const row = rows[0] || [];
   const partial = Object.fromEntries(BRAND_FIELDS.map((f, i) => [f, row[i] || ""])) as Partial<BrandConfig>;
   return withBrandDefaults(partial);
@@ -47,6 +48,7 @@ export async function GET(req: NextRequest) {
       total: Number(r[9]) || 0,
       pdfDriveLink: r[10] || "",
       sacCode: r[11] || "999293",
+      paymentMode: r[12] || "",
     }))
     .filter((inv) => !search || inv.billToName.toLowerCase().includes(search) || inv.serialNumber.toLowerCase().includes(search))
     .reverse(); // most recent first
@@ -56,7 +58,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { billToName, billToPhone, billToEmail, note, lineItems, date, sacCode } = body as {
+  const { billToName, billToPhone, billToEmail, note, lineItems, date, sacCode, paymentMode } = body as {
     billToName: string;
     billToPhone: string;
     billToEmail: string;
@@ -64,6 +66,7 @@ export async function POST(req: NextRequest) {
     date: string;
     lineItems: InvoiceLineItem[];
     sacCode?: string;
+    paymentMode?: string;
   };
 
   if (!billToName || !lineItems?.length) {
@@ -96,6 +99,7 @@ export async function POST(req: NextRequest) {
     gstAmount,
     total,
     sacCode: sacCode || "999293",
+    paymentMode: paymentMode || "",
   };
 
   const brand = await loadBrandConfig();
@@ -123,6 +127,7 @@ export async function POST(req: NextRequest) {
     invoice.total,
     pdfDriveLink,
     invoice.sacCode || "",
+    invoice.paymentMode || "",
   ]);
 
   return new NextResponse(new Uint8Array(pdfBuffer), {

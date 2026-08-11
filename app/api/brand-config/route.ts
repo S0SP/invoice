@@ -20,10 +20,11 @@ const FIELDS: (keyof BrandConfig)[] = [
   "secondaryColor",
   "paymentLink",
   "sacCodes",
+  "paymentModes",
 ];
 
 export async function GET() {
-  const rows = await readTab(TABS.brandConfig, "A2:P2");
+  const rows = await readTab(TABS.brandConfig, "A2:Q2");
   const row = rows[0] || [];
   const partial = Object.fromEntries(FIELDS.map((f, i) => [f, row[i] || ""])) as Partial<BrandConfig>;
   const config = withBrandDefaults(partial);
@@ -32,11 +33,11 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
   const body = (await req.json()) as Partial<BrandConfig>;
-  const rows = await readTab(TABS.brandConfig, "A2:P2");
+  const rows = await readTab(TABS.brandConfig, "A2:Q2");
   const existing = rows[0] || [];
 
   const merged = FIELDS.map((f, i) => (body[f] !== undefined ? String(body[f]) : existing[i] || ""));
 
-  await updateRange(`${TABS.brandConfig}!A2:P2`, merged);
+  await updateRange(`${TABS.brandConfig}!A2:Q2`, merged);
   return NextResponse.json({ ok: true });
 }

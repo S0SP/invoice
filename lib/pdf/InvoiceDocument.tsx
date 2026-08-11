@@ -179,7 +179,7 @@ function buildStyles(brand: BrandConfig) {
       borderTopColor: "#E2E8F0",
     },
     paymentInfo: {
-      width: "60%",
+      width: "55%",
     },
     footerLabel: {
       fontSize: 10,
@@ -193,8 +193,13 @@ function buildStyles(brand: BrandConfig) {
       color: "#334155",
       lineHeight: 1.5,
     },
+    sealQrContainer: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      width: "42%",
+      justifyContent: "flex-end",
+    },
     qrBlock: {
-      width: "35%",
       alignItems: "center",
     },
     qr: {
@@ -208,9 +213,9 @@ function buildStyles(brand: BrandConfig) {
       textAlign: "center",
     },
     seal: {
-      width: 64,
-      height: 64,
-      marginTop: 8,
+      width: 85,
+      height: 85,
+      marginRight: 12,
     },
   });
 }
@@ -301,7 +306,7 @@ export function InvoiceDocument({ invoice, brand }: { invoice: Invoice; brand: B
           <View style={styles.gridCol}>
             <View style={{ flexDirection: "row", marginBottom: 3 }}>
               <Text style={[styles.metaLabel, { width: 120 }]}>Mode of Payment:</Text>
-              <Text style={styles.metaValue}>Online</Text>
+              <Text style={styles.metaValue}>{invoice.paymentMode || "Bank Transfer"}</Text>
             </View>
             <View style={{ flexDirection: "row", marginBottom: 3 }}>
               <Text style={[styles.metaLabel, { width: 120 }]}>Payment Status:</Text>
@@ -388,11 +393,13 @@ export function InvoiceDocument({ invoice, brand }: { invoice: Invoice; brand: B
                 </Link>
               </Text>
             ) : null}
-            {brand.sealUrl ? <Image src={brand.sealUrl} style={styles.seal} /> : null}
           </View>
-          <View style={styles.qrBlock}>
-            {brand.qrUrl ? <Image src={brand.qrUrl} style={styles.qr} /> : null}
-            <Text style={styles.qrText}>Scan to Pay</Text>
+          <View style={styles.sealQrContainer}>
+            {brand.sealUrl ? <Image src={brand.sealUrl} style={styles.seal} /> : null}
+            <View style={styles.qrBlock}>
+              {brand.qrUrl ? <Image src={brand.qrUrl} style={styles.qr} /> : null}
+              <Text style={styles.qrText}>Scan to Pay</Text>
+            </View>
           </View>
         </View>
       </Page>

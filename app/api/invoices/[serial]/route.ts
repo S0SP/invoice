@@ -22,6 +22,7 @@ export async function GET(_req: NextRequest, { params }: { params: { serial: str
     total: Number(row[9]),
     pdfDriveLink: row[10] || "",
     sacCode: row[11] || "999293",
+    paymentMode: row[12] || "",
   };
 
   return NextResponse.json({ invoice });
