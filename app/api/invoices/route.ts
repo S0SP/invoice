@@ -49,6 +49,7 @@ export async function GET(req: NextRequest) {
       pdfDriveLink: r[10] || "",
       sacCode: r[11] || "999293",
       paymentMode: r[12] || "",
+      placeOfSupply: r[13] || "Intra-State",
     }))
     .filter((inv) => !search || inv.billToName.toLowerCase().includes(search) || inv.serialNumber.toLowerCase().includes(search))
     .reverse(); // most recent first
@@ -58,7 +59,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { billToName, billToPhone, billToEmail, note, lineItems, date, sacCode, paymentMode } = body as {
+  const { billToName, billToPhone, billToEmail, note, lineItems, date, sacCode, paymentMode, placeOfSupply } = body as {
     billToName: string;
     billToPhone: string;
     billToEmail: string;
@@ -67,6 +68,7 @@ export async function POST(req: NextRequest) {
     lineItems: InvoiceLineItem[];
     sacCode?: string;
     paymentMode?: string;
+    placeOfSupply?: string;
   };
 
   if (!billToName || !lineItems?.length) {
@@ -74,14 +76,18 @@ export async function POST(req: NextRequest) {
   }
 
   const invoiceDate = date ? new Date(date) : new Date();
+  const brand = await loadBrandConfig();
 
-  // Each line item can carry its own GST rate (set at catalog time, editable per invoice)
   let subtotal = 0;
   let gstAmount = 0;
   for (const item of lineItems) {
     const lineTotal = item.qty * item.price;
     subtotal += lineTotal;
-    gstAmount += lineTotal * ((item.gstRate ?? 18) / 100);
+    const cgstVal = item.cgstRate ?? 9;
+    const sgstVal = item.sgstRate ?? 9;
+    const igstVal = item.igstRate ?? 18;
+    const totalItemGstRate = (placeOfSupply === "Inter-State") ? igstVal : (cgstVal + sgstVal);
+    gstAmount += lineTotal * (totalItemGstRate / 100);
   }
   const total = subtotal + gstAmount;
 
@@ -100,9 +106,9 @@ export async function POST(req: NextRequest) {
     total,
     sacCode: sacCode || "999293",
     paymentMode: paymentMode || "",
+    placeOfSupply: placeOfSupply || "Intra-State",
   };
 
-  const brand = await loadBrandConfig();
   const pdfBuffer = await renderToBuffer(InvoiceDocument({ invoice, brand }));
 
   let pdfDriveLink = "";
@@ -128,6 +134,7 @@ export async function POST(req: NextRequest) {
     pdfDriveLink,
     invoice.sacCode || "",
     invoice.paymentMode || "",
+    invoice.placeOfSupply || "",
   ]);
 
   return new NextResponse(new Uint8Array(pdfBuffer), {

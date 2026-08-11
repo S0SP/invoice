@@ -21,11 +21,13 @@ interface Props {
     note?: string;
     sacCode?: string;
     paymentMode?: string;
+    placeOfSupply?: string;
   }) => void;
   onUpdateLine: (index: number, patch: Partial<InvoiceLineItem>) => void;
   onRemoveLine: (index: number) => void;
   sacCode: string;
   paymentMode: string;
+  placeOfSupply: string;
 }
 
 export function InvoicePreview({
@@ -42,13 +44,24 @@ export function InvoicePreview({
   onRemoveLine,
   sacCode,
   paymentMode,
+  placeOfSupply,
 }: Props) {
   const subtotal = lineItems.reduce((sum, it) => sum + it.qty * it.price, 0);
-  const gstAmount = lineItems.reduce((sum, it) => sum + it.qty * it.price * (it.gstRate / 100), 0);
+
+  const cgstAmount = lineItems.reduce((sum, it) => sum + it.qty * it.price * ((it.cgstRate ?? 9) / 100), 0);
+  const sgstAmount = lineItems.reduce((sum, it) => sum + it.qty * it.price * ((it.sgstRate ?? 9) / 100), 0);
+  const igstAmount = lineItems.reduce((sum, it) => sum + it.qty * it.price * ((it.igstRate ?? 18) / 100), 0);
+
+  const gstAmount = placeOfSupply === "Inter-State" ? igstAmount : (cgstAmount + sgstAmount);
   const total = subtotal + gstAmount;
 
-  // Divide total GST by 2 to get CGST and SGST/UTGST
-  const halfGstAmount = gstAmount / 2;
+  const uniqueCgstRates = Array.from(new Set(lineItems.map(it => it.cgstRate ?? 9)));
+  const uniqueSgstRates = Array.from(new Set(lineItems.map(it => it.sgstRate ?? 9)));
+  const uniqueIgstRates = Array.from(new Set(lineItems.map(it => it.igstRate ?? 18)));
+
+  const cgstLabel = uniqueCgstRates.length === 1 ? `CGST (${uniqueCgstRates[0]}%)` : "CGST";
+  const sgstLabel = uniqueSgstRates.length === 1 ? `SGST (${uniqueSgstRates[0]}%)` : "SGST";
+  const igstLabel = uniqueIgstRates.length === 1 ? `IGST (${uniqueIgstRates[0]}%)` : "IGST";
 
   const blue = brand.primaryColor || "#2F80F9";
 
@@ -164,9 +177,16 @@ export function InvoicePreview({
           </div>
         </div>
         <div className="text-xs text-slate-700 space-y-1">
-          <div className="flex">
+          <div className="flex items-center gap-1">
             <span className="font-bold text-slate-800 w-32">Place of Supply:</span>
-            <span className="text-slate-900">Bihar (India)</span>
+            <select
+              className="uy-inline-input text-[#0F1729] font-medium bg-transparent border-b border-dashed border-slate-300 focus:border-b-2 focus:border-primary py-0.5 focus:outline-none cursor-pointer"
+              value={placeOfSupply}
+              onChange={(e) => onChange({ placeOfSupply: e.target.value })}
+            >
+              <option value="Intra-State">Intra-State</option>
+              <option value="Inter-State">Inter-State</option>
+            </select>
           </div>
           <div className="flex items-center gap-1">
             <span className="font-bold text-slate-800 w-32">SAC Code:</span>
@@ -270,9 +290,41 @@ export function InvoicePreview({
                       className="w-20 border border-slate-200 rounded px-1 py-0.5 bg-slate-50 focus:bg-white focus:outline-none"
                     />
                   </div>
-                  <div className="text-slate-400">
-                    GST: {item.gstRate}%
-                  </div>
+                  {placeOfSupply === "Inter-State" ? (
+                    <div className="flex items-center gap-0.5">
+                      <span className="text-slate-400">IGST:</span>
+                      <input
+                        type="number"
+                        value={item.igstRate ?? 18}
+                        onChange={(e) => onUpdateLine(i, { igstRate: Number(e.target.value) })}
+                        className="w-10 text-center border border-slate-200 rounded px-1 py-0.5 bg-slate-50 focus:bg-white focus:outline-none"
+                      />
+                      <span className="text-slate-400">%</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-0.5">
+                        <span className="text-slate-400">CGST:</span>
+                        <input
+                          type="number"
+                          value={item.cgstRate ?? 9}
+                          onChange={(e) => onUpdateLine(i, { cgstRate: Number(e.target.value) })}
+                          className="w-10 text-center border border-slate-200 rounded px-1 py-0.5 bg-slate-50 focus:bg-white focus:outline-none"
+                        />
+                        <span className="text-slate-400">%</span>
+                      </div>
+                      <div className="flex items-center gap-0.5">
+                        <span className="text-slate-400">SGST:</span>
+                        <input
+                          type="number"
+                          value={item.sgstRate ?? 9}
+                          onChange={(e) => onUpdateLine(i, { sgstRate: Number(e.target.value) })}
+                          className="w-10 text-center border border-slate-200 rounded px-1 py-0.5 bg-slate-50 focus:bg-white focus:outline-none"
+                        />
+                        <span className="text-slate-400">%</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -295,18 +347,29 @@ export function InvoicePreview({
       {/* Tax Breakdown */}
       {lineItems.length > 0 && (
         <div className="mt-4 border-t border-slate-100 pt-2 text-[11px] text-slate-600 space-y-1">
-          <div className="flex justify-between">
-            <span>CGST (9%)</span>
-            <span className="font-medium text-slate-900">
-              ₹{halfGstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span>SGST (9%)</span>
-            <span className="font-medium text-slate-900">
-              ₹{halfGstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </div>
+          {placeOfSupply === "Inter-State" ? (
+            <div className="flex justify-between">
+              <span>{igstLabel}</span>
+              <span className="font-medium text-slate-900">
+                ₹{gstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+          ) : (
+            <>
+              <div className="flex justify-between">
+                <span>{cgstLabel}</span>
+                <span className="font-medium text-slate-900">
+                  ₹{cgstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>{sgstLabel}</span>
+                <span className="font-medium text-slate-900">
+                  ₹{sgstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            </>
+          )}
         </div>
       )}
 

@@ -18,6 +18,7 @@ export default function NewInvoicePage() {
   const [lineItems, setLineItems] = useState<InvoiceLineItem[]>([]);
   const [sacCode, setSacCode] = useState("");
   const [paymentMode, setPaymentMode] = useState("");
+  const [placeOfSupply, setPlaceOfSupply] = useState("Intra-State");
   const [saving, setSaving] = useState(false);
   const [successSerial, setSuccessSerial] = useState("");
   const [lastSaved, setLastSaved] = useState<{
@@ -77,7 +78,9 @@ export default function NewInvoicePage() {
         description: product.description,
         qty: 1,
         price: product.defaultPrice,
-        gstRate: product.gstRate,
+        cgstRate: product.cgstRate ?? 9,
+        sgstRate: product.sgstRate ?? 9,
+        igstRate: product.igstRate ?? 18,
       },
     ]);
   }
@@ -97,7 +100,7 @@ export default function NewInvoicePage() {
     const res = await fetch("/api/invoices", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ billToName, billToPhone, billToEmail, note, date, lineItems, sacCode, paymentMode }),
+      body: JSON.stringify({ billToName, billToPhone, billToEmail, note, date, lineItems, sacCode, paymentMode, placeOfSupply }),
     });
 
     if (!res.ok) {
@@ -119,7 +122,10 @@ export default function NewInvoicePage() {
     URL.revokeObjectURL(url);
 
     const subtotal = lineItems.reduce((sum, it) => sum + it.qty * it.price, 0);
-    const gstAmount = lineItems.reduce((sum, it) => sum + it.qty * it.price * (it.gstRate / 100), 0);
+    const gstAmount = lineItems.reduce((sum, it) => {
+      const rate = placeOfSupply === "Inter-State" ? (it.igstRate ?? 18) : ((it.cgstRate ?? 9) + (it.sgstRate ?? 9));
+      return sum + it.qty * it.price * (rate / 100);
+    }, 0);
     const total = subtotal + gstAmount;
 
     setLastSaved({
@@ -264,11 +270,13 @@ export default function NewInvoicePage() {
                   if (patch.note !== undefined) setNote(patch.note);
                   if (patch.sacCode !== undefined) setSacCode(patch.sacCode);
                   if (patch.paymentMode !== undefined) setPaymentMode(patch.paymentMode);
+                  if (patch.placeOfSupply !== undefined) setPlaceOfSupply(patch.placeOfSupply);
                 }}
                 onUpdateLine={updateLine}
                 onRemoveLine={removeLine}
                 sacCode={sacCode}
                 paymentMode={paymentMode}
+                placeOfSupply={placeOfSupply}
               />
             ) : (
               <div className="rounded-card border border-border bg-panel p-10 text-center text-sm text-muted">

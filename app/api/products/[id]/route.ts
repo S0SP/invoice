@@ -18,12 +18,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     updates.description ?? existing[3],
     updates.unitLabel ?? existing[4],
     updates.defaultPrice !== undefined ? Number(updates.defaultPrice) : existing[5],
-    updates.gstRate !== undefined ? Number(updates.gstRate) : existing[6],
-    updates.active !== undefined ? String(updates.active) : existing[7],
+    updates.cgstRate !== undefined ? Number(updates.cgstRate) : existing[6],
+    updates.sgstRate !== undefined ? Number(updates.sgstRate) : existing[7],
+    updates.igstRate !== undefined ? Number(updates.igstRate) : existing[8],
+    updates.active !== undefined ? String(updates.active) : existing[9],
   ];
 
   const sheetRow = rowIndex + 2; // +2: header row + 1-indexing
-  await updateRange(`${TABS.products}!A${sheetRow}:H${sheetRow}`, merged);
+  await updateRange(`${TABS.products}!A${sheetRow}:J${sheetRow}`, merged);
 
   return NextResponse.json({ ok: true });
 }

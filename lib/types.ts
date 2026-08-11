@@ -12,7 +12,9 @@ export interface Product {
   description: string;
   unitLabel: string; // e.g. "Sessions", "Copies"
   defaultPrice: number;
-  gstRate: number; // set per catalog item, e.g. 18
+  cgstRate: number;
+  sgstRate: number;
+  igstRate: number;
   active: boolean;
 }
 
@@ -23,7 +25,9 @@ export interface InvoiceLineItem {
   description: string;
   qty: number;
   price: number; // editable per invoice, defaults from Product.defaultPrice
-  gstRate: number; // editable per invoice, defaults from Product.gstRate
+  cgstRate: number;
+  sgstRate: number;
+  igstRate: number;
 }
 
 export interface Invoice {
@@ -40,6 +44,7 @@ export interface Invoice {
   pdfDriveLink?: string;
   sacCode?: string;
   paymentMode?: string;
+  placeOfSupply?: string;
 }
 
 export interface BrandConfig {

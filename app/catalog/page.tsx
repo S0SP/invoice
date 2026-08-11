@@ -11,7 +11,9 @@ const emptyForm = {
   description: "",
   unitLabel: "Sessions",
   defaultPrice: "",
-  gstRate: "18",
+  cgstRate: "9",
+  sgstRate: "9",
+  igstRate: "18",
 };
 
 export default function CatalogPage() {
@@ -75,7 +77,9 @@ export default function CatalogPage() {
       description: p.description || "",
       unitLabel: p.unitLabel,
       defaultPrice: String(p.defaultPrice),
-      gstRate: String(p.gstRate),
+      cgstRate: String(p.cgstRate ?? 9),
+      sgstRate: String(p.sgstRate ?? 9),
+      igstRate: String(p.igstRate ?? 18),
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -136,12 +140,32 @@ export default function CatalogPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-muted">GST rate (%)</label>
+              <label className="mb-1 block text-xs text-muted">CGST rate (%)</label>
               <input
                 required
                 type="number"
-                value={form.gstRate}
-                onChange={(e) => setForm({ ...form, gstRate: e.target.value })}
+                value={form.cgstRate}
+                onChange={(e) => setForm({ ...form, cgstRate: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted">SGST rate (%)</label>
+              <input
+                required
+                type="number"
+                value={form.sgstRate}
+                onChange={(e) => setForm({ ...form, sgstRate: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-muted">IGST rate (%)</label>
+              <input
+                required
+                type="number"
+                value={form.igstRate}
+                onChange={(e) => setForm({ ...form, igstRate: e.target.value })}
                 className="w-full rounded-lg border border-border bg-background px-3 py-2"
               />
             </div>
@@ -197,7 +221,7 @@ export default function CatalogPage() {
                   <p className="text-xs text-muted my-1">{p.description}</p>
                 )}
                 <p className="text-xs text-muted">
-                  {p.type === "ebook" ? "Ebook" : "Session"} · ₹{p.defaultPrice} · GST {p.gstRate}% · Unit: {p.unitLabel}
+                  {p.type === "ebook" ? "Ebook" : "Session"} · ₹{p.defaultPrice} · CGST {p.cgstRate}% / SGST {p.sgstRate}% / IGST {p.igstRate}% · Unit: {p.unitLabel}
                 </p>
               </div>
               <div className="flex gap-3">

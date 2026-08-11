@@ -4,7 +4,7 @@ import { readTab, appendRow, TABS } from "@/lib/sheets";
 import type { Product } from "@/lib/types";
 
 function rowToProduct(row: string[]): Product {
-  const [id, name, type, description, unitLabel, defaultPrice, gstRate, active] = row;
+  const [id, name, type, description, unitLabel, defaultPrice, cgstRate, sgstRate, igstRate, active] = row;
   return {
     id,
     name,
@@ -12,7 +12,9 @@ function rowToProduct(row: string[]): Product {
     description: description || "",
     unitLabel: unitLabel || "Sessions",
     defaultPrice: Number(defaultPrice) || 0,
-    gstRate: Number(gstRate) || 18,
+    cgstRate: Number(cgstRate) || 9,
+    sgstRate: Number(sgstRate) || 9,
+    igstRate: Number(igstRate) || 18,
     active: active !== "false",
   };
 }
@@ -38,7 +40,9 @@ export async function POST(req: NextRequest) {
     description: description || "",
     unitLabel: unitLabel || (type === "ebook" ? "Copies" : "Sessions"),
     defaultPrice: Number(defaultPrice),
-    gstRate: Number(gstRate) || 18,
+    cgstRate: Number(body.cgstRate) || 9,
+    sgstRate: Number(body.sgstRate) || 9,
+    igstRate: Number(body.igstRate) || 18,
     active: true,
   };
 
@@ -49,7 +53,9 @@ export async function POST(req: NextRequest) {
     product.description,
     product.unitLabel,
     product.defaultPrice,
-    product.gstRate,
+    product.cgstRate,
+    product.sgstRate,
+    product.igstRate,
     "true",
   ]);
 

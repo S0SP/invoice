@@ -23,6 +23,7 @@ export async function GET(_req: NextRequest, { params }: { params: { serial: str
     pdfDriveLink: row[10] || "",
     sacCode: row[11] || "999293",
     paymentMode: row[12] || "",
+    placeOfSupply: row[13] || "Intra-State",
   };
 
   return NextResponse.json({ invoice });

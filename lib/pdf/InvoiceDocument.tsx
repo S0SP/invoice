@@ -224,8 +224,16 @@ export function InvoiceDocument({ invoice, brand }: { invoice: Invoice; brand: B
   const styles = buildStyles(brand);
   const blue = brand.primaryColor || FALLBACK_BLUE;
 
-  // Divide total GST by 2 to get CGST and SGST/UTGST
-  const halfGstAmount = invoice.gstAmount / 2;
+  const cgstAmount = invoice.lineItems.reduce((sum, it) => sum + it.qty * it.price * ((it.cgstRate ?? 9) / 100), 0);
+  const sgstAmount = invoice.lineItems.reduce((sum, it) => sum + it.qty * it.price * ((it.sgstRate ?? 9) / 100), 0);
+
+  const uniqueCgstRates = Array.from(new Set(invoice.lineItems.map(it => it.cgstRate ?? 9)));
+  const uniqueSgstRates = Array.from(new Set(invoice.lineItems.map(it => it.sgstRate ?? 9)));
+  const uniqueIgstRates = Array.from(new Set(invoice.lineItems.map(it => it.igstRate ?? 18)));
+
+  const cgstLabel = uniqueCgstRates.length === 1 ? `CGST (${uniqueCgstRates[0]}%)` : "CGST";
+  const sgstLabel = uniqueSgstRates.length === 1 ? `SGST (${uniqueSgstRates[0]}%)` : "SGST";
+  const igstLabel = uniqueIgstRates.length === 1 ? `IGST (${uniqueIgstRates[0]}%)` : "IGST";
 
   return (
     <Document>
@@ -284,7 +292,7 @@ export function InvoiceDocument({ invoice, brand }: { invoice: Invoice; brand: B
           <View style={styles.gridCol}>
             <View style={{ flexDirection: "row", marginBottom: 3 }}>
               <Text style={[styles.metaLabel, { width: 110 }]}>Place of Supply:</Text>
-              <Text style={styles.metaValue}>Bihar (India)</Text>
+              <Text style={styles.metaValue}>{invoice.placeOfSupply || "Intra-State"}</Text>
             </View>
             <View style={{ flexDirection: "row", marginBottom: 3 }}>
               <Text style={[styles.metaLabel, { width: 110 }]}>SAC Code:</Text>
@@ -339,18 +347,29 @@ export function InvoiceDocument({ invoice, brand }: { invoice: Invoice; brand: B
 
         {/* Tax Breakdowns */}
         <View style={{ marginTop: 8 }}>
-          <View style={styles.taxRow}>
-            <Text style={styles.taxLabel}>CGST (9%)</Text>
-            <Text style={styles.taxValue}>
-              Rs. {halfGstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </Text>
-          </View>
-          <View style={styles.taxRow}>
-            <Text style={styles.taxLabel}>SGST (9%)</Text>
-            <Text style={styles.taxValue}>
-              Rs. {halfGstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </Text>
-          </View>
+          {invoice.placeOfSupply === "Inter-State" ? (
+            <View style={styles.taxRow}>
+              <Text style={styles.taxLabel}>{igstLabel}</Text>
+              <Text style={styles.taxValue}>
+                Rs. {invoice.gstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </Text>
+            </View>
+          ) : (
+            <>
+              <View style={styles.taxRow}>
+                <Text style={styles.taxLabel}>{cgstLabel}</Text>
+                <Text style={styles.taxValue}>
+                  Rs. {cgstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </Text>
+              </View>
+              <View style={styles.taxRow}>
+                <Text style={styles.taxLabel}>{sgstLabel}</Text>
+                <Text style={styles.taxValue}>
+                  Rs. {sgstAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </Text>
+              </View>
+            </>
+          )}
         </View>
 
         {/* Total row */}
