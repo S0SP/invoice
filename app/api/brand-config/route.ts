@@ -23,7 +23,9 @@ const FIELDS: (keyof BrandConfig)[] = [
   "paymentModes",
 ];
 
-export async function GET() {
+export const dynamic = "force-dynamic";
+
+export async function GET(req: NextRequest) {
   const rows = await readTab(TABS.brandConfig, "A2:Q2");
   const row = rows[0] || [];
   const partial = Object.fromEntries(FIELDS.map((f, i) => [f, row[i] || ""])) as Partial<BrandConfig>;

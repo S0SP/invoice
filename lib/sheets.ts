@@ -88,6 +88,7 @@ export const TABS = {
   counter: "Counter",
   invoices: "Invoices",
   brandConfig: "BrandConfig",
+  bulkImport: "BulkImport",
 } as const;
 
 /** Reads all rows (minus header) from a tab as arrays of cell strings. */

@@ -19,6 +19,7 @@ export default function NewInvoicePage() {
   const [sacCode, setSacCode] = useState("");
   const [paymentMode, setPaymentMode] = useState("");
   const [placeOfSupply, setPlaceOfSupply] = useState("Intra-State");
+  const [bulkImportRowIndices, setBulkImportRowIndices] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
   const [successSerial, setSuccessSerial] = useState("");
   const [lastSaved, setLastSaved] = useState<{
@@ -38,30 +39,50 @@ export default function NewInvoicePage() {
       .then((r) => r.json())
       .then((d) => {
         setBrand(d.config || null);
+        
+        let defSac = "999293";
         if (d.config?.sacCodes) {
           try {
             const parsed = JSON.parse(d.config.sacCodes);
             if (Array.isArray(parsed) && parsed.length > 0) {
-              setSacCode(parsed[0].code);
+              defSac = parsed[0].code;
             }
-          } catch (e) {
-            setSacCode("999293");
-          }
-        } else {
-          setSacCode("999293");
+          } catch (e) {}
         }
+        setSacCode(defSac);
 
+        let defPay = "Bank Transfer";
         if (d.config?.paymentModes) {
           try {
             const parsed = JSON.parse(d.config.paymentModes);
             if (Array.isArray(parsed) && parsed.length > 0) {
-              setPaymentMode(parsed[0]);
+              defPay = parsed[0];
             }
+          } catch (e) {}
+        }
+        setPaymentMode(defPay);
+
+        // Load pre-filled draft from sessionStorage if it exists
+        const savedDraft = sessionStorage.getItem("draft_invoice");
+        if (savedDraft) {
+          try {
+            const draft = JSON.parse(savedDraft);
+            if (draft.billToName !== undefined) setBillToName(draft.billToName);
+            if (draft.billToPhone !== undefined) setBillToPhone(draft.billToPhone);
+            if (draft.billToEmail !== undefined) setBillToEmail(draft.billToEmail);
+            if (draft.note !== undefined) setNote(draft.note);
+            if (draft.date !== undefined) setDate(draft.date);
+            if (draft.sacCode !== undefined && draft.sacCode !== "") setSacCode(draft.sacCode);
+            if (draft.paymentMode !== undefined && draft.paymentMode !== "") setPaymentMode(draft.paymentMode);
+            if (draft.placeOfSupply !== undefined && draft.placeOfSupply !== "") setPlaceOfSupply(draft.placeOfSupply);
+            if (draft.lineItems !== undefined) setLineItems(draft.lineItems);
+            if (draft.rowIndices !== undefined) setBulkImportRowIndices(draft.rowIndices);
+            
+            // Clean up
+            sessionStorage.removeItem("draft_invoice");
           } catch (e) {
-            setPaymentMode("Bank Transfer");
+            console.error("Failed to parse draft invoice from sessionStorage", e);
           }
-        } else {
-          setPaymentMode("Bank Transfer");
         }
       });
   }, []);
@@ -100,7 +121,7 @@ export default function NewInvoicePage() {
     const res = await fetch("/api/invoices", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ billToName, billToPhone, billToEmail, note, date, lineItems, sacCode, paymentMode, placeOfSupply }),
+      body: JSON.stringify({ billToName, billToPhone, billToEmail, note, date, lineItems, sacCode, paymentMode, placeOfSupply, bulkImportRowIndices }),
     });
 
     if (!res.ok) {
@@ -144,6 +165,7 @@ export default function NewInvoicePage() {
     setBillToEmail("");
     setNote("");
     setLineItems([]);
+    setBulkImportRowIndices([]);
   }
 
   function getWhatsAppShareUrl() {

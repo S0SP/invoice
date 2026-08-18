@@ -4,6 +4,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 const links = [
   { href: "/invoices/new", label: "New Invoice" },
   { href: "/invoices", label: "History" },
+  { href: "/invoices/bulk-import", label: "Bulk Import" },
   { href: "/catalog", label: "Catalog" },
   { href: "/settings/brand", label: "Brand Settings" },
 ];

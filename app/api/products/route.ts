@@ -19,7 +19,9 @@ function rowToProduct(row: string[]): Product {
   };
 }
 
-export async function GET() {
+export const dynamic = "force-dynamic";
+
+export async function GET(req: NextRequest) {
   const rows = await readTab(TABS.products);
   const products = rows.map(rowToProduct).filter((p) => p.active);
   return NextResponse.json({ products });

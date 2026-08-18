@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { renderToBuffer } from "@react-pdf/renderer";
-import { readTab, appendRow, TABS } from "@/lib/sheets";
+import { readTab, appendRow, updateRange, TABS } from "@/lib/sheets";
 import { getNextSerialNumber } from "@/lib/serial";
 import { uploadInvoicePdf } from "@/lib/drive";
 import { InvoiceDocument } from "@/lib/pdf/InvoiceDocument";
@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { billToName, billToPhone, billToEmail, note, lineItems, date, sacCode, paymentMode, placeOfSupply } = body as {
+  const { billToName, billToPhone, billToEmail, note, lineItems, date, sacCode, paymentMode, placeOfSupply, bulkImportRowIndices, responseType } = body as {
     billToName: string;
     billToPhone: string;
     billToEmail: string;
@@ -69,6 +69,8 @@ export async function POST(req: NextRequest) {
     sacCode?: string;
     paymentMode?: string;
     placeOfSupply?: string;
+    bulkImportRowIndices?: number[];
+    responseType?: "json" | "pdf";
   };
 
   if (!billToName || !lineItems?.length) {
@@ -136,6 +138,24 @@ export async function POST(req: NextRequest) {
     invoice.paymentMode || "",
     invoice.placeOfSupply || "",
   ]);
+
+  if (bulkImportRowIndices && bulkImportRowIndices.length > 0) {
+    for (const rowIndex of bulkImportRowIndices) {
+      try {
+        await updateRange(`${TABS.bulkImport}!L${rowIndex}`, [serialNumber]);
+      } catch (err) {
+        console.error(`Failed to update status for row ${rowIndex} in BulkImport:`, err);
+      }
+    }
+  }
+
+  if (responseType === "json") {
+    return NextResponse.json({
+      success: true,
+      serialNumber,
+      pdfDriveLink,
+    });
+  }
 
   return new NextResponse(new Uint8Array(pdfBuffer), {
     status: 201,
