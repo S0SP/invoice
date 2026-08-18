@@ -41,5 +41,13 @@ export async function PATCH(req: NextRequest) {
   const merged = FIELDS.map((f, i) => (body[f] !== undefined ? String(body[f]) : existing[i] || ""));
 
   await updateRange(`${TABS.brandConfig}!A2:Q2`, merged);
+
+  try {
+    const { initializeBulkImportSheet } = await import("@/lib/sheetsInit");
+    await initializeBulkImportSheet();
+  } catch (err) {
+    console.error("Failed to automatically update validations:", err);
+  }
+
   return NextResponse.json({ ok: true });
 }

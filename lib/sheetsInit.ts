@@ -1,99 +1,46 @@
-const fs = require("fs");
-const path = require("path");
-const { google } = require("googleapis");
+import { getSheetsClient, SPREADSHEET_ID, TABS } from "./sheets";
 
-// 1. Manually parse .env variables to authenticate outside Next.js runtime
-const envPath = path.join(__dirname, "../.env");
-if (fs.existsSync(envPath)) {
-  const envContent = fs.readFileSync(envPath, "utf8");
-  envContent.split(/\r?\n/).forEach((line) => {
-    const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
-    if (match) {
-      const key = match[1];
-      let value = match[2] || "";
-      if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
-      if (value.startsWith("'") && value.endsWith("'")) value = value.slice(1, -1);
-      process.env[key] = value;
-    }
-  });
-}
+export async function initializeBulkImportSheet() {
+  const sheets = getSheetsClient();
+  const spreadsheetId = SPREADSHEET_ID;
 
-function getAuth() {
-  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const privateKeyRaw = process.env.GOOGLE_PRIVATE_KEY;
-
-  if (!clientEmail || !privateKeyRaw) {
-    throw new Error("Missing Google credentials in environment variables.");
-  }
-
-  let privateKey = privateKeyRaw.trim();
-  if (privateKey.startsWith('"') && privateKey.endsWith('"')) privateKey = privateKey.slice(1, -1);
-  if (privateKey.startsWith("'") && privateKey.endsWith("'")) privateKey = privateKey.slice(1, -1);
-  privateKey = privateKey.replace(/\\n/g, "\n");
-
-  return new google.auth.GoogleAuth({
-    credentials: {
-      client_email: clientEmail,
-      private_key: privateKey,
-    },
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  });
-}
-
-async function run() {
-  console.log("Starting Google Sheets initialization...");
-  const auth = getAuth();
-  const sheets = google.sheets({ version: "v4", auth });
-  const spreadsheetId = process.env.SHEET_ID;
-
-  if (!spreadsheetId) {
-    throw new Error("Missing SHEET_ID in environment variables.");
-  }
-
-  // 2. Fetch BrandConfig for dropdown validations
-  console.log("Loading brand configurations for validation values...");
+  // 1. Fetch BrandConfig for dropdown validations
   const resConfig = await sheets.spreadsheets.values.get({
     spreadsheetId,
     range: "BrandConfig!A2:Q2",
   });
   const configRow = resConfig.data.values ? resConfig.data.values[0] : [];
 
-  // Parse SAC Codes
+  // Parse SAC codes
   const sacCodesJson = configRow[15] || "";
-  let sacCodes = [];
+  let sacCodes: string[] = [];
   try {
     if (sacCodesJson) {
-      sacCodes = JSON.parse(sacCodesJson).map((c) => String(c.code));
+      sacCodes = JSON.parse(sacCodesJson).map((c: any) => String(c.code));
     }
   } catch (e) {
-    console.warn("Failed to parse sacCodes, using fallbacks:", e.message);
+    console.warn("Failed to parse sacCodes:", e);
   }
   if (sacCodes.length === 0) sacCodes = ["999293", "9984"];
 
   // Parse Payment Modes
   const paymentModesJson = configRow[16] || "";
-  let paymentModes = [];
+  let paymentModes: string[] = [];
   try {
     if (paymentModesJson) {
       paymentModes = JSON.parse(paymentModesJson);
     }
   } catch (e) {
-    console.warn("Failed to parse paymentModes, using fallbacks:", e.message);
+    console.warn("Failed to parse paymentModes:", e);
   }
   if (paymentModes.length === 0) paymentModes = ["Bank Transfer", "Razorpay"];
 
-  console.log("Loaded validation options:");
-  console.log(" - SAC Codes:", sacCodes);
-  console.log(" - Payment Modes:", paymentModes);
-
-  // 3. Check if BulkImport sheet tab exists
-  console.log("Checking sheet tabs...");
+  // 2. Check if BulkImport sheet tab exists
   const metadata = await sheets.spreadsheets.get({ spreadsheetId });
-  const bulkImportSheet = metadata.data.sheets.find((s) => s.properties.title === "BulkImport");
+  const bulkImportSheet = metadata.data.sheets?.find((s) => s.properties?.title === "BulkImport");
 
-  let sheetId;
+  let sheetId: number;
   if (!bulkImportSheet) {
-    console.log("BulkImport tab not found. Creating it...");
     const addRes = await sheets.spreadsheets.batchUpdate({
       spreadsheetId,
       requestBody: {
@@ -108,15 +55,12 @@ async function run() {
         ],
       },
     });
-    sheetId = addRes.data.replies[0].addSheet.properties.sheetId;
-    console.log(`Created BulkImport tab with Sheet ID: ${sheetId}`);
+    sheetId = addRes.data.replies?.[0].addSheet?.properties?.sheetId || 0;
   } else {
-    sheetId = bulkImportSheet.properties.sheetId;
-    console.log(`Found existing BulkImport tab with Sheet ID: ${sheetId}`);
+    sheetId = bulkImportSheet.properties?.sheetId || 0;
   }
 
-  // 4. Overwrite headers in row 1
-  console.log("Setting column headers...");
+  // 3. Write Headers
   const headers = [
     "Import ID",
     "Invoice Date",
@@ -142,15 +86,13 @@ async function run() {
       values: [headers],
     },
   });
-  console.log("Headers written successfully.");
 
-  // 5. Pre-fill VLOOKUP formulas for columns H (Price) & I (GST Rate) dynamically
-  console.log("Pre-filling Price and GST Rate VLOOKUP formulas...");
-  const formulas = [];
+  // 4. Set formulas in H2:I1000 for auto-populating Price and GST Rate from Products catalog
+  const formulas: string[][] = [];
   for (let r = 2; r <= 1000; r++) {
     formulas.push([
-      `=IF(ISBLANK(F${r}), "", IFERROR(VLOOKUP(F${r}, Products!$B$2:$I$100, 5, FALSE), ""))`, // Column H
-      `=IF(ISBLANK(F${r}), "", IFERROR(VLOOKUP(F${r}, Products!$B$2:$I$100, 8, FALSE), ""))`, // Column I
+      `=IF(ISBLANK(F${r}), "", IFERROR(VLOOKUP(F${r}, Products!$B$2:$I$100, 5, FALSE), ""))`, // Price (Column H)
+      `=IF(ISBLANK(F${r}), "", IFERROR(VLOOKUP(F${r}, Products!$B$2:$I$100, 8, FALSE), ""))`, // GST Rate (Column I)
     ]);
   }
   await sheets.spreadsheets.values.update({
@@ -161,12 +103,10 @@ async function run() {
       values: formulas,
     },
   });
-  console.log("VLOOKUP formulas populated.");
 
-  // 6. Apply Data Validation rules (Columns F, I, J, K, L)
-  console.log("Applying Data Validation validation dropdowns to sheet columns...");
+  // 5. Apply Dropdowns (Data Validation)
   const validationRequests = [
-    // Column F (Product Name): index 5 -> ONE_OF_RANGE referencing Products!$B$2:$B$100
+    // Column F (Product Name): index 5 -> ONE_OF_RANGE referencing Products!$B$2:$B$100 dynamically
     {
       setDataValidation: {
         range: {
@@ -191,7 +131,7 @@ async function run() {
       setDataValidation: {
         range: {
           sheetId,
-          startRowIndex: 1, // Skip header row
+          startRowIndex: 1,
           endRowIndex: 1000,
           startColumnIndex: 8,
           endColumnIndex: 9,
@@ -274,12 +214,4 @@ async function run() {
       requests: validationRequests,
     },
   });
-
-  console.log("Data Validation rules applied successfully!");
-  console.log("Sheet tab BulkImport is ready to use!");
 }
-
-run().catch((err) => {
-  console.error("Initialization script failed:", err);
-  process.exit(1);
-});
