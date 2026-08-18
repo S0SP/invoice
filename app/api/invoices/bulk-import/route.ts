@@ -6,8 +6,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
-    // 1. Fetch pending rows from BulkImport sheet (columns A to L)
-    const rows = await readTab(TABS.bulkImport, "A2:L");
+    // 1. Fetch pending rows from BulkImport sheet (columns A to N)
+    const rows = await readTab(TABS.bulkImport, "A2:N");
     
     // 2. Fetch catalog products to match names & default values
     const productRows = await readTab(TABS.products);
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
     })).filter(p => p.active);
 
     // 3. Group and process rows
-    const draftsMap: {
+        const draftsMap: {
       [importId: string]: {
         importId: string;
         date: string;
@@ -34,6 +34,8 @@ export async function GET(req: NextRequest) {
         billToEmail: string;
         note: string;
         sacCode: string;
+        paymentMode: string;
+        placeOfSupply: string;
         lineItems: InvoiceLineItem[];
         rowIndices: number[];
       }
@@ -41,7 +43,7 @@ export async function GET(req: NextRequest) {
 
     rows.forEach((row, index) => {
       const importId = row[0]?.trim();
-      const status = row[11]?.trim();
+      const status = row[13]?.trim();
 
       // Skip rows with no Import ID or those that are already processed (Status != empty)
       if (!importId || status) return;
@@ -55,7 +57,9 @@ export async function GET(req: NextRequest) {
       const price = row[7]?.trim() ? Number(row[7]) : null;
       const customGstRate = row[8]?.trim() ? Number(row[8]) : null;
       const sacCode = row[9]?.trim() || "";
-      const note = row[10]?.trim() || "";
+      const paymentMode = row[10]?.trim() || "";
+      const placeOfSupply = row[11]?.trim() || "Intra-State";
+      const note = row[12]?.trim() || "";
       const rowIndex = index + 2; // spreadsheet row number (A2 in sheet corresponds to index 0 + 2 = row 2)
 
       const matchedProduct = catalogProducts.find(p =>
@@ -96,6 +100,8 @@ export async function GET(req: NextRequest) {
           billToEmail,
           note,
           sacCode,
+          paymentMode,
+          placeOfSupply,
           lineItems: [],
           rowIndices: [],
         };

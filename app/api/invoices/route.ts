@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
   if (bulkImportRowIndices && bulkImportRowIndices.length > 0) {
     for (const rowIndex of bulkImportRowIndices) {
       try {
-        await updateRange(`${TABS.bulkImport}!L${rowIndex}`, [serialNumber]);
+        await updateRange(`${TABS.bulkImport}!N${rowIndex}`, [serialNumber]);
       } catch (err) {
         console.error(`Failed to update status for row ${rowIndex} in BulkImport:`, err);
       }

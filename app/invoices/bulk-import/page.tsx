@@ -22,6 +22,8 @@ interface DraftInvoice {
   billToEmail: string;
   note: string;
   sacCode: string;
+  paymentMode: string;
+  placeOfSupply: string;
   rowIndices: number[];
   lineItems: {
     productId: string;
@@ -107,6 +109,8 @@ export default function BulkImportPage() {
           date: draft.date,
           lineItems: draft.lineItems,
           sacCode: draft.sacCode,
+          paymentMode: draft.paymentMode,
+          placeOfSupply: draft.placeOfSupply,
           bulkImportRowIndices: draft.rowIndices,
           responseType: "json"
         })
@@ -155,6 +159,8 @@ export default function BulkImportPage() {
             date: draft.date,
             lineItems: draft.lineItems,
             sacCode: draft.sacCode,
+            paymentMode: draft.paymentMode,
+            placeOfSupply: draft.placeOfSupply,
             bulkImportRowIndices: draft.rowIndices,
             responseType: "json"
           })
@@ -243,8 +249,10 @@ export default function BulkImportPage() {
                     <span>H: Price</span>
                     <span>I: GST Rate</span>
                     <span>J: SAC Code</span>
-                    <span>K: Note</span>
-                    <span>L: Status</span>
+                    <span>K: Payment Mode</span>
+                    <span>L: Place of Supply</span>
+                    <span>M: Note</span>
+                    <span>N: Status</span>
                   </div>
                 </li>
                 <li>Leave the <strong><code>Status</code></strong> column empty when writing new draft lines.</li>
@@ -315,7 +323,7 @@ export default function BulkImportPage() {
           <div className="rounded-lg border border-border bg-[#F8FAFC] p-4 mb-6 flex gap-3 text-xs text-slate-600">
             <Info className="h-4 w-4 text-slate-400 mt-0.5 flex-shrink-0" />
             <div>
-              <span className="font-bold text-slate-800">Spreadsheet Grouping Helper:</span> Lines in the <strong>BulkImport</strong> tab with matching <strong>Import ID</strong> values are automatically grouped into a single invoice. Leave <strong>Status</strong> blank to keep rows in draft mode. Generated invoices will be stamped with their invoice serial numbers in column L to avoid duplicate generation.
+              <span className="font-bold text-slate-800">Spreadsheet Grouping Helper:</span> Lines in the <strong>BulkImport</strong> tab with matching <strong>Import ID</strong> values are automatically grouped into a single invoice. Leave <strong>Status</strong> blank to keep rows in draft mode. Generated invoices will be stamped with their invoice serial numbers in column N to avoid duplicate generation.
             </div>
           </div>
         )}
@@ -357,6 +365,16 @@ export default function BulkImportPage() {
                       </span>
                       <span>·</span>
                       <span>Date: {draft.date}</span>
+                      {draft.paymentMode && (
+                        <span className="bg-[#EEF2F6] text-[#3B82F6] border border-[#DBEAFE] px-1.5 py-0.5 rounded text-[10px] font-semibold">
+                          {draft.paymentMode}
+                        </span>
+                      )}
+                      {draft.placeOfSupply && (
+                        <span className="bg-[#F0FDF4] text-[#22C55E] border border-[#DCFCE7] px-1.5 py-0.5 rounded text-[10px] font-semibold">
+                          {draft.placeOfSupply}
+                        </span>
+                      )}
                       {draft.billToEmail && (
                         <>
                           <span>·</span>
